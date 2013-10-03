@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>bnd-event</artifactId>
+        <groupId>bnd</groupId>
+        <version>1.0</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>bnd-event-war</artifactId>
+    <packaging>war</packaging>
+    <build>
+        <finalName>event</finalName>
+        <plugins>
+        	<plugin>
+				<groupId>org.mortbay.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>6.1.24</version>
+			</plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <!--Список зависимостей для использования в других проектах-->
+        <dependency>
+            <groupId>bnd</groupId>
+            <artifactId>bnd-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>bnd</groupId>
+            <artifactId>bnd-eas-adapter</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>bnd</groupId>
+            <artifactId>bnd-event-view</artifactId>
+            <version>1.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>bnd</groupId>
+            <artifactId>bnd-event-service</artifactId>
+            <version>1.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>bnd</groupId>
+            <artifactId>bnd-event-dal</artifactId>
+            <version>1.0</version>
+        </dependency>
+
+        <!--Зависимости Vaadin-->
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.vaadin.addons</groupId>
+            <artifactId>i18n4vaadin</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jdal</groupId>
+            <artifactId>jdal-vaadin</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.vaadin.addons</groupId>
+            <artifactId>browsercookies</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.vaadin.addons</groupId>
+            <artifactId>filteringtable</artifactId>
+        </dependency>
+            
+        <dependency>
+            <groupId>org.vaadin.addons</groupId>
+            <artifactId>popupbutton</artifactId>
+         </dependency>
+            
+        <!--Зависимости Spring-->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-orm</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aop</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aspects</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-expression</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context-support</artifactId>
+        </dependency>
+
+        <!--Зависимости JPA-->
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-entitymanager</artifactId>
+        </dependency>
+
+        <!--Зависимости БД-->
+        <dependency>
+            <groupId>postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
+        </dependency>
+
+        <!--Зависимоть GWT-->
+        <dependency>
+            <groupId>com.google.gwt</groupId>
+            <artifactId>gwt-user</artifactId>
+        </dependency>
+
+        <!--Логирование-->
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.perf4j</groupId>
+            <artifactId>perf4j</artifactId>
+        </dependency>
+
+        <!--Сервлет-->
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+        </dependency>
+
+    </dependencies>
+
+
+</project>
