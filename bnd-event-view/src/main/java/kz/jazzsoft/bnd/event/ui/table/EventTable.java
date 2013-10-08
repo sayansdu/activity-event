@@ -1,6 +1,8 @@
 package kz.jazzsoft.bnd.event.ui.table;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import kz.jazzsoft.bnd.event.ui.table.containers.IndexContainer;
 import kz.jazzsoft.bnd.event.ui.table.containers.Sqlcontainer;
@@ -30,15 +32,17 @@ import com.vaadin.ui.Window.Notification;
  */ 
 public class EventTable{
 	
-    String eventType="ref_event_type", componentName="component_name", moduleName="module_name", 
-      	  description="description", user="ref_user", dateTime="date_time", resource="resource";
+    public String [] column = {"ref_event_type", "component_name", "module_name", 
+        	  "description", "ref_user", "date_time", "resource"};
     
+    public List<String> collapsedColumn;
+      
     private FilterTable filterTable;
-    
-	private Sqlcontainer sqlContanier;
-	private IndexContainer iContainer;
+      
+  	private Sqlcontainer sqlContanier;
+  	private IndexContainer iContainer;
 
-    public Window actionWindow;
+      public Window actionWindow;
     
     /**
      * Get SqlContainer (SqlContainer is need to communicate with DB)
@@ -56,30 +60,38 @@ public class EventTable{
      * Create and configure FilterTable
      */ 
 	 public FilterTable buildFilterTable() {	
-    	filterTable.setSizeFull(); 	
-    	filterTable.setFilterBarVisible(true);
-    	filterTable.setSelectable(true);
-		filterTable.setImmediate(true);
-		filterTable.setMultiSelect(false);
-		filterTable.setColumnCollapsingAllowed(true);
-		filterTable.setColumnReorderingAllowed(true);		
-		
-		filterTable.setContainerDataSource(iContainer.getContainer());
-		
-		filterTable.setFilterDecorator(new DemoFilterDecorator());
-		filterTable.setFilterGenerator(new DemoFilterGenerator());
-		
-		filterTable.setVisibleColumns(new String[] {eventType, componentName, moduleName, 
-		      	  description, user, dateTime, resource });
+	    	filterTable.setSizeFull(); 	
+	    	filterTable.setFilterBarVisible(true);
+	    	filterTable.setSelectable(true);
+			filterTable.setImmediate(true);
+			filterTable.setMultiSelect(false);
+			filterTable.setColumnCollapsingAllowed(true);
+			filterTable.setColumnReorderingAllowed(true);		
+			
+			filterTable.setContainerDataSource(iContainer.getContainer());
+			
+			filterTable.setFilterDecorator(new DemoFilterDecorator());
+			filterTable.setFilterGenerator(new DemoFilterGenerator());
+			
+			filterTable.setVisibleColumns(column);
 
-		filterTable.setColumnHeaders(new String[] {"Event Type", "Component Name", "Module Name", 
-				"Description", "User", "Date Time", "Resource"});		
-		
-		filterTable.setColumnCollapsed(description, true);
-		filterTable.setColumnCollapsed(resource, true);
-		filterTable.setColumnCollapsed(moduleName, true);
-		
-		return filterTable;
+			filterTable.setColumnHeaders(new String[] {"Event Type", "Component Name", "Module Name", 
+					"Description", "User", "Date Time", "Resource"});		
+			
+			if(collapsedColumn==null || collapsedColumn.size()==0)
+			{
+				filterTable.setColumnCollapsed(column[3], true);
+				filterTable.setColumnCollapsed(column[6], true);
+				filterTable.setColumnCollapsed(column[2], true);
+			}
+			else
+			{
+				for (String string : collapsedColumn) {
+					filterTable.setColumnCollapsed(string, true);
+				}
+			}
+			
+			return filterTable;
 	 }
 	 
 	    /**
@@ -130,13 +142,13 @@ public class EventTable{
     public void initializeColumns(String eventType, String componentName, String moduleName, 
 			String description, String user, String dateTime, String resource){
 		
-		filterTable.setColumnHeader(this.eventType, eventType);
-		filterTable.setColumnHeader(this.componentName, componentName);
-		filterTable.setColumnHeader(this.moduleName, moduleName);
-		filterTable.setColumnHeader(this.user, user);
-		filterTable.setColumnHeader(this.description, description);
-		filterTable.setColumnHeader(this.dateTime, dateTime);
-		filterTable.setColumnHeader(this.resource, resource);
+		filterTable.setColumnHeader(column[0], eventType);
+		filterTable.setColumnHeader(this.column[1], componentName);
+		filterTable.setColumnHeader(this.column[2], moduleName);
+		filterTable.setColumnHeader(this.column[3], description);
+		filterTable.setColumnHeader(this.column[4], user);
+		filterTable.setColumnHeader(this.column[5], dateTime);
+		filterTable.setColumnHeader(this.column[6], resource);
 		
 	}
     
@@ -237,21 +249,21 @@ public class EventTable{
 			form.setMargin(true);
 			form.setSpacing(true);
 			
-			TextField event_type_field = new TextField(eventType);
-			TextField component_name_field = new TextField(componentName);
-			TextField module_name_field = new TextField(moduleName);
-			TextArea description_field = new TextArea(description);
-			TextField user_field = new TextField(user);
-			TextField date_time_field = new TextField(dateTime);
-			TextField resource_field = new TextField(resource);
+			TextField event_type_field = new TextField(column[0]);
+			TextField component_name_field = new TextField(column[1]);
+			TextField module_name_field = new TextField(column[2]);
+			TextArea description_field = new TextArea(column[3]);
+			TextField user_field = new TextField(column[4]);
+			TextField date_time_field = new TextField(column[5]);
+			TextField resource_field = new TextField(column[6]);
 			
-			event_type_field.setValue(filterTable.getItem(target).getItemProperty(eventType).getValue());
-			component_name_field.setValue(filterTable.getItem(target).getItemProperty(componentName).getValue());
-			module_name_field.setValue(filterTable.getItem(target).getItemProperty(moduleName).getValue());
-			description_field.setValue(filterTable.getItem(target).getItemProperty(description).getValue());
-			user_field.setValue(filterTable.getItem(target).getItemProperty(user).getValue());
-			date_time_field.setValue(filterTable.getItem(target).getItemProperty(dateTime).getValue());
-			resource_field.setValue(filterTable.getItem(target).getItemProperty(resource).getValue());
+			event_type_field.setValue(filterTable.getItem(target).getItemProperty(column[0]).getValue());
+			component_name_field.setValue(filterTable.getItem(target).getItemProperty(column[1]).getValue());
+			module_name_field.setValue(filterTable.getItem(target).getItemProperty(column[2]).getValue());
+			description_field.setValue(filterTable.getItem(target).getItemProperty(column[3]).getValue());
+			user_field.setValue(filterTable.getItem(target).getItemProperty(column[4]).getValue());
+			date_time_field.setValue(filterTable.getItem(target).getItemProperty(column[5]).getValue());
+			resource_field.setValue(filterTable.getItem(target).getItemProperty(column[6]).getValue());
 			
 			event_type_field.setColumns(15);
 			component_name_field.setColumns(15);
@@ -299,10 +311,31 @@ public class EventTable{
     }
  
     public void updateTable(){
+    	collapsedColumn = getCollapsedColumn();
     	filterTable.removeAllItems();
     	sqlContanier.initContainers();
 		iContainer = new IndexContainer(sqlContanier);
 		buildFilterTable();
+    }
+    
+    public List<String> getCollapsedColumn()
+    {
+    	List<String> columns = new ArrayList<String>();
+    	for (String string : column) {
+			if(filterTable.isColumnCollapsed(string))
+				columns.add(string);
+		}
+    	return columns;
+    }
+    
+    public void setCollapsedColumn(List<String> columns)
+    {
+    	for (String string : column) {
+			filterTable.setColumnCollapsed(string, false);
+		}
+    	for (String string : columns) {
+			filterTable.setColumnCollapsed(string, true);
+		}
     }
 }
 

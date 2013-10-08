@@ -1,21 +1,21 @@
 package kz.jazzsoft.bnd.event.ui.view;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.List;
 
+import com.vaadin.event.ItemClickEvent;
 import com.vaadin.terminal.ThemeResource;
 import com.vaadin.ui.*;
 import com.vaadin.ui.Button.ClickEvent;
+import com.vaadin.ui.Window.Notification;
 import com.vaadin.ui.themes.Reindeer;
 
 import kz.jazzsoft.bnd.event.localization.LocaleView;
 import kz.jazzsoft.bnd.event.ui.table.EventTable;
+import kz.jazzsoft.bnd.event.ui.table.containers.Dbconfig;
+import kz.jazzsoft.bnd.event.ui.table.containers.PgSQLOperations;
 import kz.jazzsoft.bnd.event.ui.table.containers.Sqlcontainer;
+import kz.jazzsoft.bnd.event.ui.view.tree.GetMonths;
+import kz.jazzsoft.bnd.event.ui.view.tree.LeftTree;
 
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -27,22 +27,27 @@ import org.springframework.stereotype.Component;
 public class EventsView extends LocaleView{
     
 	
-    Dbconfig dbconfig = new Dbconfig();
+	Dbconfig dbconfig = new Dbconfig();
+	PgSQLOperations pgSQL;    
+	LeftTree tree;
 	
     EventTable eventTable;
     HorizontalLayout mainLayout, topLayout, archiveLayout, bottomLayout;
     VerticalLayout verticalLayout;
     Button show, archive, restore, remove, setting, update;
-    Tree tree;
-    
-    String directory = directory(), current_day="Current Date", restored_day="Archives";
     
     private final String DB_URL = dbconfig.getDBURL();
     private final String DB_URL_Archive = dbconfig.getDBArchiveURL();
+    private List<String> columns;
     
     
     public EventsView() {
     	initialDatabase();
+    	pgSQL = new PgSQLOperations();
+    	dbconfig = new Dbconfig();
+    	tree = new LeftTree();
+    	tree.setDirectory(pgSQL.directory());
+    	
     	mainLayout = new HorizontalLayout();
         verticalLayout = new VerticalLayout();
         archiveLayout = new HorizontalLayout();
@@ -50,13 +55,6 @@ public class EventsView extends LocaleView{
         mainLayout.setHeight("100%");
         mainLayout.setSpacing(true);
         
-        tree = new Tree();
-        tree.setWidth("200px");
-        tree.setHeight("100%");
-        tree.setVisible(false);
-    	tree.addItem(current_day);
-    	tree.addItem(restored_day);
-    	
         show = new Button();
         show.setStyleName(Reindeer.BUTTON_LINK);
         show.setIcon(new ThemeResource("icon/right-32X32.png"));
@@ -76,13 +74,12 @@ public class EventsView extends LocaleView{
         bottomLayout.addComponent(setting);
         bottomLayout.addComponent(update);
         
+        Select select = createLocalizationSelect();
+        tree.refresh();
         
         mainLayout.addComponent(tree);
         mainLayout.addComponent(verticalLayout);
         mainLayout.setExpandRatio(verticalLayout, 1.5f);
-   
-        Select select = createLocalizationSelect();
-        treeRefresh(tree, directory);
         
         topLayout = new HorizontalLayout();
         topLayout.setWidth("100%");
@@ -102,6 +99,7 @@ public class EventsView extends LocaleView{
         verticalLayout.addComponent(eventTable.getFilterTable());
         verticalLayout.addComponent(bottomLayout);
         
+   
         /**
          * starts add to Buttons ClickListener 
          */       
@@ -117,13 +115,8 @@ public class EventsView extends LocaleView{
 			
 			@Override
 			public void buttonClick(ClickEvent event) {			
-				SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy  HH-mm-ss");
-				String file_name  = sdf.format(new Date()).toString();				
-				File path = new File(directory+"/"+file_name);
-				if(!path.exists()) path.mkdirs();
-			
-				backup(path.getAbsolutePath() , file_name);
-				treeRefresh(tree, directory);
+				pgSQL.backup();
+				tree.refresh();
 			}
 		});
         
@@ -132,12 +125,33 @@ public class EventsView extends LocaleView{
 			@Override
 			public void buttonClick(ClickEvent event){ 				
 				String selected = (String) tree.getValue();
-				if(selected.equals(current_day)) 	changeDatabase(DB_URL);				
-				else 									restore(selected);
-
-				eventTable.initializeColumns(setLocaleValue("event.eventType"), setLocaleValue("event.componentName"), 
-				setLocaleValue("event.moduleName"), setLocaleValue("event.eventDescription"), setLocaleValue("event.user"),
-				setLocaleValue("event.dateTime"), setLocaleValue("event.resource"));
+				if(selected==null)
+				{
+					getApplication().getMainWindow().showNotification(
+							"WARNING", "Archive is not selected",
+							Notification.TYPE_WARNING_MESSAGE
+							);
+				}
+				else
+				{
+					if(selected.equals(tree.getCurrentDay())) 	
+					{ 	
+						changeDatabase(DB_URL);   
+					}		
+					else
+					{ 						
+						pgSQL.restore(selected);
+						changeDatabase(DB_URL_Archive);		
+					}
+	
+					eventTable.initializeColumns(   setLocaleValue("event.eventType"), 
+													setLocaleValue("event.componentName"), 
+													setLocaleValue("event.moduleName"), 
+													setLocaleValue("event.eventDescription"), 
+													setLocaleValue("event.user"),
+													setLocaleValue("event.dateTime"), 
+													setLocaleValue("event.resource"));	
+				}
 			}
 		});
   
@@ -161,11 +175,47 @@ public class EventsView extends LocaleView{
         update.addListener(new Button.ClickListener() {
 			
 			@Override
-			public void buttonClick(ClickEvent event) {
+			public void buttonClick(ClickEvent event) 
+			{
 				eventTable.updateTable();
-				eventTable.initializeColumns(setLocaleValue("event.eventType"), setLocaleValue("event.componentName"), 
-				setLocaleValue("event.moduleName"), setLocaleValue("event.eventDescription"), setLocaleValue("event.user"),
-				setLocaleValue("event.dateTime"), setLocaleValue("event.resource"));
+				eventTable.initializeColumns(   setLocaleValue("event.eventType"), 
+												setLocaleValue("event.componentName"), 
+												setLocaleValue("event.moduleName"), 
+												setLocaleValue("event.eventDescription"), 
+												setLocaleValue("event.user"),
+												setLocaleValue("event.dateTime"), 
+												setLocaleValue("event.resource"));	
+			}
+		});
+  
+        tree.addListener(new ItemClickEvent.ItemClickListener() {
+						
+			public void itemClick(ItemClickEvent event) 
+			{
+				String selected = (String) tree.getValue();
+				if(event.isDoubleClick())
+				{
+					if(selected!=null){
+						if(selected.equals(tree.getCurrentDay())) 
+						{ 	
+							changeDatabase(DB_URL);
+						}		
+						else
+						{ 						
+							pgSQL.restore(selected);
+							changeDatabase(DB_URL_Archive);		
+						}
+	
+						eventTable.initializeColumns(   setLocaleValue("event.eventType"), 
+														setLocaleValue("event.componentName"), 
+														setLocaleValue("event.moduleName"), 
+														setLocaleValue("event.eventDescription"), 
+														setLocaleValue("event.user"),
+														setLocaleValue("event.dateTime"), 
+														setLocaleValue("event.resource"));	
+					}
+					
+				}
 				
 			}
 		});
@@ -177,125 +227,39 @@ public class EventsView extends LocaleView{
         addLanguage("ru", setLocaleValue("language.ru"));
         addLanguage("kz", setLocaleValue("language.kz"));
         addLanguage("en", setLocaleValue("language.en"));
-        eventTable.initializeColumns(setLocaleValue("event.eventType"), setLocaleValue("event.componentName"), 
-				setLocaleValue("event.moduleName"), setLocaleValue("event.eventDescription"), setLocaleValue("event.user"),
-				setLocaleValue("event.dateTime"), setLocaleValue("event.resource") );
+		eventTable.initializeColumns(   setLocaleValue("event.eventType"), 
+										setLocaleValue("event.componentName"), 
+										setLocaleValue("event.moduleName"), 
+										setLocaleValue("event.eventDescription"), 
+										setLocaleValue("event.user"),
+										setLocaleValue("event.dateTime"), 
+										setLocaleValue("event.resource"));
         
         archive.setCaption(setLocaleValue("button.archive"));
         restore.setCaption(setLocaleValue("button.restore"));
                 
-        tree.removeAllItems();
-        tree.addItem(current_day = setLocaleValue("event.current"));
-        tree.addItem(restored_day = setLocaleValue("event.restore"));
-        treeRefresh(tree, directory);
         
+     
         remove.setCaption(setLocaleValue("button.remove"));
         setting.setCaption(setLocaleValue("button.show"));
         update.setCaption(setLocaleValue("button.update"));
+        
+		GetMonths.all_months.put("01", setLocaleValue("summary.table.january") );
+		GetMonths.all_months.put("02", setLocaleValue("summary.table.february") );
+		GetMonths.all_months.put("03", setLocaleValue("summary.table.march") );
+		GetMonths.all_months.put("04", setLocaleValue("summary.table.april") );
+		GetMonths.all_months.put("05", setLocaleValue("summary.table.may") );
+		GetMonths.all_months.put("06", setLocaleValue("summary.table.june") );
+		GetMonths.all_months.put("07", setLocaleValue("summary.table.july") );
+		GetMonths.all_months.put("08", setLocaleValue("summary.table.august") );
+		GetMonths.all_months.put("09", setLocaleValue("summary.table.september") );
+		GetMonths.all_months.put("10", setLocaleValue("summary.table.october") );
+		GetMonths.all_months.put("11", setLocaleValue("summary.table.november") );
+		GetMonths.all_months.put("12", setLocaleValue("summary.table.december") );
+		tree.updateItems(setLocaleValue("event.current"), setLocaleValue("event.restore"));
 		
     }
     
-    /**
-     * Add new item to tree
-     */
-    private void treeRefresh(Tree tree, String directory){
-    	File files = new File(directory);
-    	if(files.exists()){
-    		for (File file : files.listFiles()) {
-    			if(file.getName().startsWith("."))
-    				continue;
-    			tree.addItem(file.getName());
-				tree.setParent(file.getName(), restored_day);
-			}
-    	}
-    	else 
-    		System.out.println("File don't exist");
-    	    return;
-    }
-    
-    private String directory(){
-		String userHome=System.getProperty("user.home");
-		return userHome+"/bnd/event/archives";
-    }
-
-    /**
-     * unzip backup and dearchive iy to bnd_event2 DB by pg_restore 
-     */
-    private void restore(String file_name){	
-    	
-        try{
-        	Process p;
-        	ProcessBuilder pb;
-        	
-        	pb = new ProcessBuilder( 
-        	    dbconfig.getPG_restore() ,
-        	    "--ignore-version",
-        	    "--host", dbconfig.getDBIP(),
-        	    "--port", dbconfig.getDBPort(),
-        	    "--username", dbconfig.getUserName(),
-        	    "-d", dbconfig.getDBArchiveName(),
-        	    "--verbose",
-        	    "--clean",
-        	    
-        	    directory+"/"+file_name+"/"+file_name+".backup" );
-        	pb.redirectErrorStream(true);
-        	p = pb.start();
-        	InputStream is = p.getInputStream();
-        	InputStreamReader isr = new InputStreamReader(is);
-        	BufferedReader br = new BufferedReader(isr);
-        	String ll;
-        	while ((ll = br.readLine()) != null) {
-        	 System.out.println(ll);
-        	}    
-        	
-        	changeDatabase(DB_URL_Archive);
-        }
-        catch(IOException x)
-            {
-                System.err.println("Could not invoke browser, command=");
-                System.err.println("Caught: " + x.getMessage());
-            }
-    }
- 
-    /**
-     * Archives current DB and save it to directory we specified 
-     * It creates process to archive and use pg_dumb file
-     */ 
-    private void backup(String directory, String file_name){
-        try{
-        	Process p;
-        	ProcessBuilder pb;
-        	pb = new ProcessBuilder( 
-        	    dbconfig.getPG_dump(),
-        	    "--host", dbconfig.getDBIP() ,
-        	    "--port", dbconfig.getDBPort(),
-        	    "--username", dbconfig.getUserName(),
-        	    "--verbose",
-        	    "-F", "c",
-        	    "-w",
-        	    "-f", directory+"/"+file_name+".backup",
-        	    dbconfig.getDBName());
-        	pb.redirectErrorStream(true);
-        	p = pb.start();
-        	InputStream is = p.getInputStream();
-        	InputStreamReader isr = new InputStreamReader(is);
-        	BufferedReader br = new BufferedReader(isr);
-        	String ll;
-        	while ((ll = br.readLine()) != null) {
-        	 System.out.println(ll);
-        	}                    
-        	
-        }
-        catch(IOException x)
-            {
-                System.err.println("Could not invoke browser, command=");
-                System.err.println("Caught: " + x.getMessage());
-            }
-    }
-
-    /**
-     * Set initial DB name to bnd_event 
-     */ 
     private void initialDatabase(){
     	Sqlcontainer db = new Sqlcontainer(DB_URL);
     	eventTable = new EventTable(db);
@@ -303,13 +267,16 @@ public class EventsView extends LocaleView{
   
     /**
      * Change DB name, it uses when press unzip button
-     * DB name bnd_event and bnd_event2
+     * DB names bnd_event and bnd_event_archive
      */ 
     private void changeDatabase(String dbName){
+    	columns = eventTable.getCollapsedColumn();
     	Sqlcontainer db = new Sqlcontainer(dbName);
     	verticalLayout.removeComponent(eventTable.getFilterTable());
     	verticalLayout.removeComponent(bottomLayout);
+    	
     	eventTable = new EventTable(db);
+    	eventTable.setCollapsedColumn(columns);
     	
     	verticalLayout.addComponent(eventTable.getFilterTable());
     	verticalLayout.addComponent(bottomLayout);

@@ -27,7 +27,6 @@ public class App extends Application {
         setTheme("bnd-event");
         
         mainEventView = new EventsView();
-        
         Window mainWindow = new MainWindow("Журналирование", i18N);
         this.setMainWindow(mainWindow);
         mainWindow.addComponent(mainEventView);

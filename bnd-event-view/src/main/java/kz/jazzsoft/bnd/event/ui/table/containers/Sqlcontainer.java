@@ -2,7 +2,6 @@ package kz.jazzsoft.bnd.event.ui.table.containers;
 
 import java.sql.SQLException;
 
-import kz.jazzsoft.bnd.event.ui.view.Dbconfig;
 
 import com.vaadin.data.util.sqlcontainer.RowId;
 import com.vaadin.data.util.sqlcontainer.SQLContainer;
