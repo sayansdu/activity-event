@@ -1,5 +1,7 @@
 package kz.jazzsoft.bnd.event.ui.table.containers;
 
+import java.util.Date;
+
 import kz.jazzsoft.bnd.event.adapter.EventAdapter;
 
 import com.vaadin.data.Container;
@@ -21,7 +23,7 @@ public class IndexContainer {
 	public IndexContainer(Sqlcontainer sqlContainer) {
 		this.sqlContainer = sqlContainer.getContainer();
 		iContainer = new IndexedContainer();
-		
+		System.out.println("IndexContainer start: "+(new Date()));
 		for (Object ob : this.sqlContainer.getContainerPropertyIds()) { 
 			if(ob.toString().equals(eventType)){
 				iContainer.addContainerProperty(ob, EventAdapter.Type.class, null);
@@ -44,6 +46,7 @@ public class IndexContainer {
 			iContainer.getContainerProperty(ob, dateTime     ).setValue(this.sqlContainer.getItem(ob).getItemProperty(dateTime).getValue());
 			iContainer.getContainerProperty(ob, resource     ).setValue(this.sqlContainer.getItem(ob).getItemProperty(resource).getValue());
 		}
+		System.out.println("IndexContainer stop: "+(new Date()));
 	}
 	
 	public Container getContainer(){

@@ -10,13 +10,14 @@ import org.tepi.filtertable.numberfilter.NumberFilterPopupConfig;
 import com.vaadin.terminal.Resource;
 import com.vaadin.terminal.ThemeResource;
 
-
+ 
 
 @SuppressWarnings("serial")
 public class DemoFilterDecorator implements FilterDecorator, Serializable {
-
+	
+	String search, start, end, set, clear;
+	
     public String getEnumFilterDisplayName(Object propertyId, Object value) {
-   
         // returning null will output default value
         return null;
     }
@@ -43,35 +44,35 @@ public class DemoFilterDecorator implements FilterDecorator, Serializable {
     }
 
     public String getFromCaption() {
-        return "Start date:";
+        return start+":";
     }
 
     public String getToCaption() {
-        return "End date:";
+        return end+":";
     }
 
     public String getSetCaption() {
-        // use default caption
-        return null;
+        return set;
     }
 
     public String getClearCaption() {
-        // use default caption
-        return null;
+        return clear;
     }
 
     public boolean isTextFilterImmediate(Object propertyId) {
-        // use text change events for all the text fields
+        if(propertyId.equals("ref_user"))
+        	return true;
+        
         return true;
     }
 
     public int getTextChangeTimeout(Object propertyId) {
         // use the same timeout for all the text fields
-        return 500;
+        return 300;
     }
 
     public String getAllItemsVisibleString() {
-        return "Show all";
+        return search;
     }
 
 //    public Resolution getDateFieldResolution(Object propertyId) {
@@ -111,4 +112,30 @@ public class DemoFilterDecorator implements FilterDecorator, Serializable {
 		// TODO Auto-generated method stub
 		return 0;
 	}
+	
+	public void setSearch(String search)
+	{
+		this.search = search;
+	}
+	
+	public void setStart(String search)
+	{
+		this.start = search;
+	}
+	
+	public void setEnd(String search)
+	{
+		this.end = search;
+	}
+	
+	public void setSet(String search)
+	{
+		this.set = search;
+	}
+	
+	public void setClear(String search)
+	{
+		this.clear = search;
+	}
+	
 }

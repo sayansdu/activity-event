@@ -121,4 +121,12 @@
         <modifyDataType tableName="bnd_event" columnName="date_time" newDataType="TIMESTAMP"/>
     </changeSet>
 
+	<changeSet id="2013-01-30_001" author="Sayan.Zhumashev">
+        <addColumn tableName="bnd_event" >
+        	<column name="xml" type="text">
+        		<constraints nullable="true"/>
+        	</column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

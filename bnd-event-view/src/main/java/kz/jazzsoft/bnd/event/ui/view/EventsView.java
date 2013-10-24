@@ -1,5 +1,6 @@
 package kz.jazzsoft.bnd.event.ui.view;
 
+import java.util.Date;
 import java.util.List;
 
 import com.vaadin.event.ItemClickEvent;
@@ -33,7 +34,7 @@ public class EventsView extends LocaleView{
 	
     EventTable eventTable;
     HorizontalLayout mainLayout, topLayout, archiveLayout, bottomLayout;
-    VerticalLayout verticalLayout;
+    VerticalLayout verticalLayout, tableLayout;
     Button show, archive, restore, remove, setting, update;
     
     private final String DB_URL = dbconfig.getDBURL();
@@ -48,12 +49,15 @@ public class EventsView extends LocaleView{
     	tree = new LeftTree();
     	tree.setDirectory(pgSQL.directory());
     	
-    	mainLayout = new HorizontalLayout();
+      	mainLayout = new HorizontalLayout();
         verticalLayout = new VerticalLayout();
         archiveLayout = new HorizontalLayout();
-        mainLayout.setWidth("100%");
-        mainLayout.setHeight("100%");
+        mainLayout.setSizeFull();
         mainLayout.setSpacing(true);
+        
+        tableLayout = new VerticalLayout();
+        tableLayout.addComponent(eventTable.getFilterTable());
+        tableLayout.setWidth("100%");
         
         show = new Button();
         show.setStyleName(Reindeer.BUTTON_LINK);
@@ -68,11 +72,28 @@ public class EventsView extends LocaleView{
         bottomLayout.setSpacing(true);
         
         remove = new Button();
+        remove.setIcon(new ThemeResource("icon/delete.png"));
+        remove.setStyleName(Reindeer.BUTTON_LINK);
         setting = new Button();
+        setting.setIcon(new ThemeResource("icon/setting_tools.png"));
+        setting.setStyleName(Reindeer.BUTTON_LINK);
         update = new Button();
+        update.setIcon(new ThemeResource("icon/update.png"));
+        update.setStyleName(Reindeer.BUTTON_LINK);
+        
+        Label space = new Label("&nbsp", Label.CONTENT_XHTML);
+        space.setWidth("10px");
+        
         bottomLayout.addComponent(remove);
+        bottomLayout.addComponent(space);
         bottomLayout.addComponent(setting);
+        bottomLayout.addComponent(space);
         bottomLayout.addComponent(update);
+        bottomLayout.addComponent(space);
+        bottomLayout.setHeight("40px");
+        bottomLayout.setComponentAlignment(remove, Alignment.TOP_RIGHT);
+        bottomLayout.setComponentAlignment(setting, Alignment.TOP_RIGHT);
+        bottomLayout.setComponentAlignment(update, Alignment.TOP_RIGHT);
         
         Select select = createLocalizationSelect();
         tree.refresh();
@@ -96,7 +117,7 @@ public class EventsView extends LocaleView{
         this.addComponent(mainLayout);
         verticalLayout.setSpacing(true);
         verticalLayout.addComponent(archiveLayout);
-        verticalLayout.addComponent(eventTable.getFilterTable());
+        verticalLayout.addComponent(tableLayout);
         verticalLayout.addComponent(bottomLayout);
         
    
@@ -116,6 +137,7 @@ public class EventsView extends LocaleView{
 			@Override
 			public void buttonClick(ClickEvent event) {			
 				pgSQL.backup();
+				changeDatabase(DB_URL);
 				tree.refresh();
 			}
 		});
@@ -134,6 +156,7 @@ public class EventsView extends LocaleView{
 				}
 				else
 				{
+					System.out.println("restore start: "+(new Date()));
 					if(selected.equals(tree.getCurrentDay())) 	
 					{ 	
 						changeDatabase(DB_URL);   
@@ -144,13 +167,7 @@ public class EventsView extends LocaleView{
 						changeDatabase(DB_URL_Archive);		
 					}
 	
-					eventTable.initializeColumns(   setLocaleValue("event.eventType"), 
-													setLocaleValue("event.componentName"), 
-													setLocaleValue("event.moduleName"), 
-													setLocaleValue("event.eventDescription"), 
-													setLocaleValue("event.user"),
-													setLocaleValue("event.dateTime"), 
-													setLocaleValue("event.resource"));	
+					localeTableColumn();
 				}
 			}
 		});
@@ -168,7 +185,7 @@ public class EventsView extends LocaleView{
 			
 			@Override
 			public void buttonClick(ClickEvent event) {
-				eventTable.getEvent(EventsView.this.getApplication());
+				eventTable.getEvent(EventsView.this.getApplication(), eventTable.getFilterTable().getValue());
 			}
 		});
         
@@ -177,14 +194,8 @@ public class EventsView extends LocaleView{
 			@Override
 			public void buttonClick(ClickEvent event) 
 			{
-				eventTable.updateTable();
-				eventTable.initializeColumns(   setLocaleValue("event.eventType"), 
-												setLocaleValue("event.componentName"), 
-												setLocaleValue("event.moduleName"), 
-												setLocaleValue("event.eventDescription"), 
-												setLocaleValue("event.user"),
-												setLocaleValue("event.dateTime"), 
-												setLocaleValue("event.resource"));	
+				changeDatabase(DB_URL);
+				localeTableColumn();
 			}
 		});
   
@@ -205,14 +216,8 @@ public class EventsView extends LocaleView{
 							pgSQL.restore(selected);
 							changeDatabase(DB_URL_Archive);		
 						}
-	
-						eventTable.initializeColumns(   setLocaleValue("event.eventType"), 
-														setLocaleValue("event.componentName"), 
-														setLocaleValue("event.moduleName"), 
-														setLocaleValue("event.eventDescription"), 
-														setLocaleValue("event.user"),
-														setLocaleValue("event.dateTime"), 
-														setLocaleValue("event.resource"));	
+						localeTableColumn();	
+						
 					}
 					
 				}
@@ -227,19 +232,12 @@ public class EventsView extends LocaleView{
         addLanguage("ru", setLocaleValue("language.ru"));
         addLanguage("kz", setLocaleValue("language.kz"));
         addLanguage("en", setLocaleValue("language.en"));
-		eventTable.initializeColumns(   setLocaleValue("event.eventType"), 
-										setLocaleValue("event.componentName"), 
-										setLocaleValue("event.moduleName"), 
-										setLocaleValue("event.eventDescription"), 
-										setLocaleValue("event.user"),
-										setLocaleValue("event.dateTime"), 
-										setLocaleValue("event.resource"));
+        
+        localeTableColumn();
         
         archive.setCaption(setLocaleValue("button.archive"));
         restore.setCaption(setLocaleValue("button.restore"));
-                
-        
-     
+   
         remove.setCaption(setLocaleValue("button.remove"));
         setting.setCaption(setLocaleValue("button.show"));
         update.setCaption(setLocaleValue("button.update"));
@@ -271,15 +269,36 @@ public class EventsView extends LocaleView{
      */ 
     private void changeDatabase(String dbName){
     	columns = eventTable.getCollapsedColumn();
-    	Sqlcontainer db = new Sqlcontainer(dbName);
-    	verticalLayout.removeComponent(eventTable.getFilterTable());
-    	verticalLayout.removeComponent(bottomLayout);
+    	tableLayout.removeComponent(eventTable.getFilterTable());
     	
-    	eventTable = new EventTable(db);
+    	eventTable.restoreTable(dbName);
     	eventTable.setCollapsedColumn(columns);
-    	
-    	verticalLayout.addComponent(eventTable.getFilterTable());
-    	verticalLayout.addComponent(bottomLayout);
+    	tableLayout.addComponent(eventTable.getFilterTable());
     }
 
+    private void localeTableColumn(){
+		eventTable.initializeColumns(   
+				setLocaleValue("event.eventType"), 
+				setLocaleValue("event.componentName"), 
+				setLocaleValue("event.moduleName"), 
+				setLocaleValue("event.eventDescription"), 
+				setLocaleValue("event.user"),
+				setLocaleValue("event.dateTime"), 
+				setLocaleValue("event.resource"),
+				setLocaleValue("filter.search"),
+				setLocaleValue("filter.start.day"),
+				setLocaleValue("filter.end.day"),
+				setLocaleValue("filter.set"),
+				setLocaleValue("filter.clear"),
+				setLocaleValue("filter.show"),
+				setLocaleValue("window.setting"),
+				setLocaleValue("window.delete"),
+				setLocaleValue("button.ok"),
+				setLocaleValue("button.cancel"),
+				setLocaleValue("close"),
+				setLocaleValue("dialog.delete"),
+				setLocaleValue("page.items"),
+				setLocaleValue("page.page")
+			);
+    }
 }

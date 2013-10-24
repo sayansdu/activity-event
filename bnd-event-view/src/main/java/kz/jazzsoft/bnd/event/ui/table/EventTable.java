@@ -2,7 +2,11 @@ package kz.jazzsoft.bnd.event.ui.table;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import kz.jazzsoft.bnd.event.ui.table.containers.IndexContainer;
 import kz.jazzsoft.bnd.event.ui.table.containers.Sqlcontainer;
@@ -33,16 +37,20 @@ import com.vaadin.ui.Window.Notification;
 public class EventTable{
 	
     public String [] column = {"ref_event_type", "component_name", "module_name", 
-        	  "description", "ref_user", "date_time", "resource"};
-    
+      	  "description", "ref_user", "date_time", "resource"};
     public List<String> collapsedColumn;
-      
+    
     private FilterTable filterTable;
-      
-  	private Sqlcontainer sqlContanier;
-  	private IndexContainer iContainer;
+    private DemoFilterDecorator filterDecorator;
+    private DemoFilterGenerator filterGenerator;
+	private Sqlcontainer sqlContanier;
+	private Button.ClickListener upListener;
+	private Button.ClickListener downListener;
 
-      public Window actionWindow;
+    public Window actionWindow;
+    public EventDialog eventDialog;
+    
+    Map<String, String> words;
     
     /**
      * Get SqlContainer (SqlContainer is need to communicate with DB)
@@ -52,7 +60,7 @@ public class EventTable{
 		filterTable = new FilterTable();
 		sqlContanier = dbhelper;
 		sqlContanier.initContainers();
-		iContainer = new IndexContainer(sqlContanier);
+
 		buildFilterTable();
 	}
 	
@@ -60,55 +68,54 @@ public class EventTable{
      * Create and configure FilterTable
      */ 
 	 public FilterTable buildFilterTable() {	
-	    	filterTable.setSizeFull(); 	
-	    	filterTable.setFilterBarVisible(true);
-	    	filterTable.setSelectable(true);
-			filterTable.setImmediate(true);
-			filterTable.setMultiSelect(false);
-			filterTable.setColumnCollapsingAllowed(true);
-			filterTable.setColumnReorderingAllowed(true);		
+		 
+		 filterTable.setWidth("100%");
+    	//filterTable.setSizeFull(); 	
+		 filterTable.setFilterBarVisible(true);
+		 filterTable.setSelectable(true);
+		 filterTable.setImmediate(true);
+		 filterTable.setMultiSelect(false);
+		 filterTable.setColumnCollapsingAllowed(true);
+		 filterTable.setColumnReorderingAllowed(true);		
+		 filterTable.setPageLength(15);
+		 filterTable.setContainerDataSource(sqlContanier.getContainer());
+		changeColumn();
 			
-			filterTable.setContainerDataSource(iContainer.getContainer());
-			
-			filterTable.setFilterDecorator(new DemoFilterDecorator());
-			filterTable.setFilterGenerator(new DemoFilterGenerator());
-			
-			filterTable.setVisibleColumns(column);
+		filterGenerator = new DemoFilterGenerator(sqlContanier);
+		filterDecorator = new DemoFilterDecorator();
+		filterTable.setFilterGenerator(filterGenerator);
+		filterTable.setFilterDecorator(filterDecorator);
+		
+		filterTable.setVisibleColumns(column);
 
-			filterTable.setColumnHeaders(new String[] {"Event Type", "Component Name", "Module Name", 
-					"Description", "User", "Date Time", "Resource"});		
-			
-			if(collapsedColumn==null || collapsedColumn.size()==0)
-			{
-				filterTable.setColumnCollapsed(column[3], true);
-				filterTable.setColumnCollapsed(column[6], true);
-				filterTable.setColumnCollapsed(column[2], true);
-			}
-			else
-			{
-				for (String string : collapsedColumn) {
-					filterTable.setColumnCollapsed(string, true);
-				}
-			}
-			
-			return filterTable;
+		filterTable.setColumnHeaders(new String[] {"Event Type", "Component Name", "Module Name", 
+				"Description", "User", "Date Time", "Resource"});		
+		
+		filterTable.setColumnCollapsed(column[3], true);
+		filterTable.setColumnCollapsed(column[6], true);
+		filterTable.setColumnCollapsed(column[2], true);
+	
+		words = new  HashMap<String, String>();
+		eventDialog = new EventDialog();
+		
+		return filterTable;
 	 }
 	 
-	    /**
-	     * Change ref_event_type and ref_user column type from int to String
-	     * By id value of event_type and get it's String value
-	     */    
+	/**
+	 * Change ref_event_type and ref_user column type from int to String
+	 * By id value of event_type and get it's String value
+	 */    
 	private void changeColumn() {
 			filterTable.addGeneratedColumn("ref_event_type", new ColumnGenerator() {
 				
 				@Override
 				public Object generateCell(CustomTable source, Object itemId,Object columnId) {
 					if (filterTable.getItem(itemId).getItemProperty("ref_event_type").getValue() != null) {
-				          Label l = new Label();
+				          String l = new String();
 				          long eventTypeId = (Long) filterTable.getItem(itemId).getItemProperty(
 				                "ref_event_type").getValue();
-				          l.setValue(sqlContanier.getEventTypeById(eventTypeId));
-				          l.setSizeUndefined();
+				          l = (sqlContanier.getEventTypeById(eventTypeId));
+				          
 				          return l;
 				      }
 				    
@@ -121,11 +128,10 @@ public class EventTable{
 				@Override
 				public Object generateCell(CustomTable source, Object itemId,Object columnId) {
 					if (filterTable.getItem(itemId).getItemProperty("ref_user").getValue() != null) {
-				          Label l = new Label();
-				          int userId = (Integer) filterTable.getItem(itemId).getItemProperty(
+						  String l = new String();
+				          long userId = (Long) filterTable.getItem(itemId).getItemProperty(
 				                "ref_user").getValue();
-				          l.setValue(sqlContanier.getUserById(userId));
-				          l.setSizeUndefined();
+				          l = (sqlContanier.getUserById(userId));
 				          return l;
 				      }
 				    
@@ -136,21 +142,43 @@ public class EventTable{
     
     /**
      * Method to change column header value
-     * Usually used when change localization value
+     * Use to change localization value
      * 
      */  
     public void initializeColumns(String eventType, String componentName, String moduleName, 
-			String description, String user, String dateTime, String resource){
-		
-		filterTable.setColumnHeader(column[0], eventType);
-		filterTable.setColumnHeader(this.column[1], componentName);
-		filterTable.setColumnHeader(this.column[2], moduleName);
-		filterTable.setColumnHeader(this.column[3], description);
-		filterTable.setColumnHeader(this.column[4], user);
-		filterTable.setColumnHeader(this.column[5], dateTime);
-		filterTable.setColumnHeader(this.column[6], resource);
-		
-	}
+			String description, String user, String dateTime, String resource,
+			String filter_search, String filter_startDay, String filter_endDay, 
+			String filter_set, String filter_clear, String filter_show,
+			String setting, String delete, String ok, String cancel, String close,
+			String dialog_delete, String page_item, String page_page){
+
+	    	filterTable.setColumnHeader(column[0], eventType);
+	    	filterTable.setColumnHeader(this.column[1], componentName);
+	    	filterTable.setColumnHeader(this.column[2], moduleName);
+	    	filterTable.setColumnHeader(this.column[3], description);
+			filterTable.setColumnHeader(this.column[4], user);
+			filterTable.setColumnHeader(this.column[5], dateTime);
+			filterTable.setColumnHeader(this.column[6], resource);
+			
+			filterDecorator.setSearch(filter_search);
+			filterDecorator.setStart(filter_startDay);
+			filterDecorator.setEnd(filter_endDay);
+			filterDecorator.setSet(filter_set);
+			filterDecorator.setClear(filter_clear);
+			filterGenerator.combo.setInputPrompt(filter_search);
+			filterGenerator.setLabelValue(filter_show);
+			filterGenerator.setUserInputPrompt(filter_search);
+			filterTable.resetFilters();
+			
+			words.put("setting", setting);
+			words.put("delete", delete);
+			words.put("ok", ok);
+			words.put("cancel", cancel);
+			words.put("close", close);
+			words.put("dialog_delete", dialog_delete);
+			words.put("page.items", page_item);
+			words.put("page.page", page_page);
+		}
     
     /**
      * Return FilterTable 
@@ -177,8 +205,8 @@ public class EventTable{
 			
 			VerticalLayout vl = new VerticalLayout();
 			HorizontalLayout hr = new HorizontalLayout();
-			Button ok = new Button("Ok");
-			Button cancel = new Button("Cancel");
+			Button ok = new Button(words.get("ok"));
+			Button cancel = new Button(words.get("cancel"));
 			ok.setWidth("90px");
 			cancel.setWidth("90px");
 			Label label = new Label("Do you really want to delete this Item?");
@@ -217,17 +245,19 @@ public class EventTable{
 				
 				@Override
 				public void buttonClick(ClickEvent event) {
-				
+					System.out.println("target: "+target);
 					filterTable.removeItem(target);					
 					filterTable.commit();
 					sqlContanier.getContainer().removeItem(target);
-					try 
-					{
+					try {
 						sqlContanier.getContainer().commit();
-					} 
-					catch (UnsupportedOperationException e) {e.printStackTrace();} 
-					catch (SQLException e) {				 e.printStackTrace();}
-					
+					} catch (UnsupportedOperationException e) {
+
+						e.printStackTrace();
+					} catch (SQLException e) {
+
+						e.printStackTrace();
+					}
 					filterTable.select(null);
 					app.getMainWindow().removeWindow(actionWindow);
 				}
@@ -236,85 +266,97 @@ public class EventTable{
     	return true;
     }
 
-    public void getEvent(final Application app){
-    	Object target = filterTable.getValue();
-    	if(target == null){
+    public void getEvent(final Application app, final Object target){
+    	if(target == null)
+		{
 			app.getMainWindow().showNotification(
 					"WARNING", "Table row is not selected",
 					Notification.TYPE_WARNING_MESSAGE
 					);
+			return;
 		}
-		else{
-			FormLayout form = new FormLayout();
-			form.setMargin(true);
-			form.setSpacing(true);
+		
+    	changeDialog(target);
+		eventDialog.setWindowCaption(words.get("setting"));
+		eventDialog.setButtonCaption(words.get("close"));
+
+		eventDialog.getButton().addListener(new Button.ClickListener() {
 			
-			TextField event_type_field = new TextField(column[0]);
-			TextField component_name_field = new TextField(column[1]);
-			TextField module_name_field = new TextField(column[2]);
-			TextArea description_field = new TextArea(column[3]);
-			TextField user_field = new TextField(column[4]);
-			TextField date_time_field = new TextField(column[5]);
-			TextField resource_field = new TextField(column[6]);
-			
-			event_type_field.setValue(filterTable.getItem(target).getItemProperty(column[0]).getValue());
-			component_name_field.setValue(filterTable.getItem(target).getItemProperty(column[1]).getValue());
-			module_name_field.setValue(filterTable.getItem(target).getItemProperty(column[2]).getValue());
-			description_field.setValue(filterTable.getItem(target).getItemProperty(column[3]).getValue());
-			user_field.setValue(filterTable.getItem(target).getItemProperty(column[4]).getValue());
-			date_time_field.setValue(filterTable.getItem(target).getItemProperty(column[5]).getValue());
-			resource_field.setValue(filterTable.getItem(target).getItemProperty(column[6]).getValue());
-			
-			event_type_field.setColumns(15);
-			component_name_field.setColumns(15);
-			module_name_field.setColumns(15);
-			user_field.setColumns(15);
-			description_field.setColumns(15);
-			date_time_field.setColumns(15);
-			resource_field.setColumns(15);
-			
-			form.addComponent(event_type_field);
-			form.addComponent(component_name_field);
-			form.addComponent(module_name_field);
-			form.addComponent(description_field);
-			form.addComponent(user_field);
-			form.addComponent(date_time_field);
-			form.addComponent(resource_field);
-			
-			actionWindow = new Window("Event Setting");
-			actionWindow.setWidth("400px");
-			actionWindow.setResizable(false);
-			
-			VerticalLayout vl = new VerticalLayout();
-			HorizontalLayout hr = new HorizontalLayout();
-			Button cancel = new Button("Close");
-			vl.setMargin(true);
-			vl.setSpacing(true);
-			vl.addComponent(form);
-			vl.addComponent(hr);						
-			
-			hr.addComponent(cancel);
-			hr.setComponentAlignment(cancel, Alignment.BOTTOM_RIGHT);
-			vl.setComponentAlignment(hr, Alignment.MIDDLE_RIGHT);
-			
-			actionWindow.setContent(vl);
-			actionWindow.center();
-			app.getMainWindow().addWindow(actionWindow);		
-			cancel.addListener(new Button.ClickListener() {
+			@Override
+			public void buttonClick(ClickEvent event) {
+				app.getMainWindow().removeWindow(eventDialog);
 				
-				@Override
-				public void buttonClick(ClickEvent event) {
-					app.getMainWindow().removeWindow(actionWindow);
-				}
-			});
-		}
+			}
+		});
+		
+		eventDialog.getEvent();
+		app.getMainWindow().addWindow(eventDialog);
     }
  
-    public void updateTable(){
-    	collapsedColumn = getCollapsedColumn();
-    	filterTable.removeAllItems();
+    private void changeDialog(final Object target)
+    {
+    	eventDialog.setTarget(target);
+    	eventDialog.setEventType(filterTable.getColumnHeader(column[0]), sqlContanier.getEventTypeById( (Long) filterTable.getItem(target).getItemProperty(column[0]).getValue() ));
+		eventDialog.setComponentName(filterTable.getColumnHeader(column[1]), filterTable.getItem(target).getItemProperty(column[1]).getValue());
+		eventDialog.setModuleName(filterTable.getColumnHeader(column[2]), filterTable.getItem(target).getItemProperty(column[2]).getValue());
+		eventDialog.setDescription(filterTable.getColumnHeader(column[3]), filterTable.getItem(target).getItemProperty(column[3]).getValue());
+		eventDialog.setUser(filterTable.getColumnHeader(column[4]), sqlContanier.getUserById( (Long) filterTable.getItem(target).getItemProperty(column[4]).getValue() ));
+		eventDialog.setDateTime(filterTable.getColumnHeader(column[5]), filterTable.getItem(target).getItemProperty(column[5]).getValue());
+		eventDialog.setResource(filterTable.getColumnHeader(column[6]), filterTable.getItem(target).getItemProperty(column[6]).getValue());
+
+		upListener = new Button.ClickListener() {
+			
+			@Override
+			public void buttonClick(ClickEvent event) {
+				System.out.println("up button pressed");
+				eventDialog.getUp().removeAllValidators();
+				
+				Object itemId = filterTable.prevItemId(target);
+				if(filterTable.firstItemId().equals(itemId)){
+					eventDialog.showNotification(
+							"WARNING", "You already select first item",
+							Notification.TYPE_WARNING_MESSAGE
+							);
+					return;
+				}
+				eventDialog.getUp().removeListener(this);
+				eventDialog.getDown().removeListener(downListener);
+				changeDialog(itemId);				
+			}
+		};
+		
+		downListener = new Button.ClickListener() {
+			
+			@Override
+			public void buttonClick(ClickEvent event) {
+				System.out.println("down button pressed");
+				Object itemId = filterTable.nextItemId(target);
+				if(filterTable.lastItemId().equals(itemId)){
+					eventDialog.showNotification(
+							"WARNING", "You already select last item",
+							Notification.TYPE_WARNING_MESSAGE
+							);
+					return;
+				}
+				eventDialog.getUp().removeListener(upListener);
+				eventDialog.getDown().removeListener(this);
+				changeDialog(itemId);
+				
+			}
+		};
+		
+		eventDialog.getUp().addListener(upListener);
+		eventDialog.getDown().addListener(downListener);
+		
+    }
+
+    public void restoreTable(String dbName){
+    	
+    	filterTable.removeGeneratedColumn("ref_event_type");
+    	filterTable.removeGeneratedColumn("ref_user");
+    	
+    	sqlContanier = new Sqlcontainer(dbName);
     	sqlContanier.initContainers();
-		iContainer = new IndexContainer(sqlContanier);
 		buildFilterTable();
     }
     
@@ -323,8 +365,11 @@ public class EventTable{
     	List<String> columns = new ArrayList<String>();
     	for (String string : column) {
 			if(filterTable.isColumnCollapsed(string))
+			{
 				columns.add(string);
+			}
 		}
+    	
     	return columns;
     }
     
@@ -337,6 +382,9 @@ public class EventTable{
 			filterTable.setColumnCollapsed(string, true);
 		}
     }
+    
+    
+    
 }
 
 

@@ -2,7 +2,6 @@ package kz.jazzsoft.bnd.event.ui.table.containers;
 
 import java.sql.SQLException;
 
-
 import com.vaadin.data.util.sqlcontainer.RowId;
 import com.vaadin.data.util.sqlcontainer.SQLContainer;
 import com.vaadin.data.util.sqlcontainer.connection.JDBCConnectionPool;
@@ -20,6 +19,9 @@ public class Sqlcontainer {
 	private static JDBCConnectionPool connectionPool;
 	private static final String DB_DRIVER = "org.postgresql.Driver";
 	private SQLContainer container;
+	private SQLContainer eventTypes;
+	private SQLContainer users;
+	//private FreeformQuery query;
 	
     public Sqlcontainer(String DB_URL) {
 		try {
@@ -36,10 +38,18 @@ public class Sqlcontainer {
      * initialize container with bnd_event DB
      */ 
     public void initContainers() {
-    	QueryDelegate delegate = new TableQuery(dbConfig.getDBName(), connectionPool);
     	try {
-    		container = new SQLContainer(delegate);
-    		container.setAutoCommit(true);
+    		
+//    		query = new FreeformQuery("select e.id, e.ref_event_type, e.ref_user, d.name, e.component_name, e.module_name, " +
+//					"e.description, u.login, e.date_time, e.resource " +
+//					"from bnd_event e " +
+//					"inner join bnd_event_type d on e.ref_event_type=d.id " +
+//					"inner join bnd_users u on e.ref_user=u.id", connectionPool, "id");
+//			query.setDelegate(new DemoFreeformQueryDelegate());
+//	 		container = new SQLContainer(query);
+	 		
+			TableQuery delegate = new TableQuery("bnd_event", connectionPool);
+			container = new SQLContainer(delegate);
     		
         }catch (SQLException e) {
             e.printStackTrace();
@@ -87,5 +97,35 @@ public class Sqlcontainer {
     public SQLContainer getContainer(){
     	return container;
     }
+    
+    private void initializeEventTypesContainer(){
+    	QueryDelegate delegate = new TableQuery("bnd_event_type", connectionPool);
+		try {
+			eventTypes = new SQLContainer(delegate); 
+
+        }catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public SQLContainer getEventTypesContainer() {
+		initializeEventTypesContainer();
+    	return eventTypes;
+	}
+    
+    private void initializeUserContainer(){
+    	QueryDelegate delegate = new TableQuery("bnd_users", connectionPool);
+		try {
+			users = new SQLContainer(delegate); 
+
+        }catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public SQLContainer getUsersContainer() {
+    	initializeUserContainer();
+    	return users;
+	}
     
 }
