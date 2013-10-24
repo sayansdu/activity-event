@@ -1,2 +1,0 @@
-# Module kz.jazzsoft.bnd.event.widgetset.EventWidgetSet
-# RPC service class, partial path of RPC policy file
